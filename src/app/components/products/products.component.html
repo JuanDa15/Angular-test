@@ -1,0 +1,13 @@
+<h1>Products List</h1>
+<section class="grid-container grid-container__4">
+  <article *ngFor="let product of products">
+    <header>
+      {{product.title | slice:0:25}} - <b>{{product.price | currency}}</b>
+    </header>
+    <img [src]="product.images[0]" [alt]="product.title"  loading="lazy">
+    <p>{{product.description | slice:0:65}}</p> ...
+    <footer>
+      {{ product?.category?.name}}
+    </footer>
+  </article>
+</section>
