@@ -54,9 +54,14 @@ export class ProductService {
         catchError( (error: HttpErrorResponse) => {
           if (error.status === HttpStatusCode.InternalServerError ) {
             return throwError(() => new Error('Ups error in the server'));
-          }
-          return throwError(() => new Error('Ups spomething goes wrong'));
-        } )
+          } else if ( error.status === HttpStatusCode.Conflict ) {
+            return throwError(() => new Error('Problem getting product'));
+          } else if ( error.status === HttpStatusCode.Unauthorized ) {
+            return throwError(() => new Error('you dont have permission to access'));
+          } else {
+            return throwError(() => new Error('Ups spomething goes wrong'));
+          };
+        })
       );
   }
 

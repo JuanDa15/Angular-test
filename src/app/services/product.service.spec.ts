@@ -1,14 +1,18 @@
+import { HttpStatusCode, HTTP_INTERCEPTORS } from '@angular/common/http';
 import { HttpClientTestingModule, HttpTestingController, TestRequest } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import { environment } from 'src/environments/environment';
+import { TokenInterceptor } from '../interceptors/token.interceptor';
 import { Product, ProductDto } from '../interfaces/product.interface';
 import { generateProduct, generateProducts } from '../interfaces/product.mock';
 
 import { ProductService } from './product.service';
+import { TokenService } from './token.service';
 
 describe('ProductService', () => {
   let service: ProductService;
   let httpController: HttpTestingController;
+  let tokenService: TokenService;
 
   beforeEach(() => {
     TestBed.configureTestingModule({
@@ -16,11 +20,15 @@ describe('ProductService', () => {
         HttpClientTestingModule
       ],
       providers: [
-        ProductService
+        ProductService,
+        {
+          provide: HTTP_INTERCEPTORS, useClass: TokenInterceptor, multi: true
+        }
       ]
     });
     service = TestBed.inject(ProductService);
     httpController = TestBed.inject(HttpTestingController);
+    tokenService = TestBed.inject(TokenService);
   });
 
   afterEach(() => {
@@ -31,7 +39,7 @@ describe('ProductService', () => {
     expect(service).toBeTruthy();
   });
 
-  describe('Test for getAllProductsSimple method', () => {
+  describe('Test for getAllProductsSimpl e method', () => {
     it('should return a product list', (doneFn) => {
       // Arrange
       const mockData: Product[] = [
@@ -253,5 +261,74 @@ describe('ProductService', () => {
       expect(req.request.method).toEqual('DELETE');
       httpController.verify();
     })
+  });
+  describe('Test for get one product', () => {
+    it('should return a product', (doneFn) => {
+      // Arrange
+      const product: Product = generateProduct();
+      const id: number = 1;
+      // Act
+      service.getSingleProduct(id).subscribe({
+        next: (data: Product) => {
+          // Assert
+          expect(data).toEqual(product);
+          doneFn();
+        }
+      })
+
+      const url: string = `${environment.API_URL}products/${id}`;
+      const req: TestRequest = httpController.expectOne(url);
+      req.flush(product);
+      expect(req.request.method).toEqual('GET');
+    });
+    it('should return an error', (doneFn) => {
+      // Arrange
+      const id: number = 1;
+      const error = 'Ups error in the server';
+      const mockError = {
+        status: HttpStatusCode.NotFound,
+        statusText: error
+      };
+      // Act
+      service.getSingleProduct(id).subscribe({
+        next: (data: Product) => {
+          // Assert
+          doneFn();
+        },
+        error: (err) => {
+          expect(err).toBeInstanceOf(Error);
+          doneFn();
+        }
+      });
+
+      const url: string = `${environment.API_URL}products/${id}`;
+      const req: TestRequest = httpController.expectOne(url);
+      req.flush(new Error(error), mockError);
+      expect(req.request.method).toEqual('GET');
+    });
+  });
+  describe('Interceptor', () => {
+    it('should return a token in the req', (doneFn) => {
+      // Arrange
+      const product: Product = generateProduct();
+      const id: number = 1;
+
+      spyOn(tokenService, 'getToken').and.returnValue('token123');
+
+      // Act
+      service.getSingleProduct(id).subscribe({
+        next: (data: Product) => {
+          // Assert
+          expect(data).toEqual(product);
+          doneFn();
+        }
+      })
+
+      const url: string = `${environment.API_URL}products/${id}`;
+      const req: TestRequest = httpController.expectOne(url);
+      req.flush(product);
+      expect(req.request.headers.get('Authorization')).toBeTruthy();
+      expect(req.request.headers.get('Authorization')).toEqual('Bearer token123');
+    });
   })
 });
