@@ -4,13 +4,13 @@ jobs:
   unit-test:
     runs-on: ubuntu-latest
     steps:
-      - name: clone
+      - name: Clone
         uses: actions/checkout@v2
       - name: Node setup
         uses: actions/setup-node@v2
         with:
           node-version: 14.x
-      - name: npm install
+      - name: install
         run: npm ci
       - name: run test
         run: npm run test -- --no-watch --code-coverage --browsers=ChromeHeadlessCI
